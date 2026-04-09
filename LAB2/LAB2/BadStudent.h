@@ -3,6 +3,6 @@
 
 class BadStudent : public Student {
 public:
-    BadStudent(std::string n);
+    BadStudent(const std::string& n);
     Answer solve(Equation eq) override;
 };

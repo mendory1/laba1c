@@ -1,7 +1,7 @@
 #include "BadStudent.h" 
 
-BadStudent::BadStudent(std::string n) : Student(n) {}
+BadStudent::BadStudent(const std::string& n) : Student(n) {}
 
 Answer BadStudent::solve(Equation eq) {
-    return { 0, 0, 0 };
+    return { 0, 0, 1 };
 }

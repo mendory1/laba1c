@@ -1,30 +1,30 @@
 #pragma once
 #include <string>
+#include <map>
+#include <vector>
 #include "Equation.h" 
 
-struct Letter {
-    Equation eq;
-    Answer studentAnswer;
-    std::string studentName;
-    Letter* next;
-};
-
-struct Record {
-    std::string name;
-    int score;
-};
+class Table;
 
 class Teacher {
 private:
-    Letter* head;
-    Record* table;
-    int tableSize;
+    struct Letter {
+        Equation eq;
+        Answer studentAnswer;
+
+        Letter(Equation e, Answer a) : eq(e), studentAnswer(a) {}
+
+    };
+    std::map<std::string, std::vector<Letter>> lettersMap;
 
 public:
-    Teacher();
-    ~Teacher();
-    void registerStudents(class Student** list, int count);
-    void receiveLetter(Equation eq, Answer ans, std::string name);
-    void checkLetters();
-    void publishTable();
+    Teacher() = default;
+    ~Teacher()= default;
+    
+    void receiveLetter(Equation eq, Answer ans, const std::string& name);
+    void checkAndGrade(Table& table);
+
+private:
+    Answer correctAnswer(const Equation& eq) const;
+    bool isAnswerCorrect(const Answer& studentAns, const Equation& eq) const;
 };

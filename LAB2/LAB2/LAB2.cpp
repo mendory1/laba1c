@@ -1,48 +1,55 @@
-﻿#include <ctime>
-#include <cstdlib>
-#include <locale.h>
+﻿#include <iostream>
+#include <vector>
 #include "Equation.h"
 #include "Student.h"
 #include "BadStudent.h"
 #include "AverageStudent.h"
 #include "GoodStudent.h"
 #include "Teacher.h"
-
+#include "Table.h"
+#include "Reader.h"
 
 int main() {
     setlocale(LC_ALL, "Russian");
-    srand(time(0));
+    
     Teacher teacher;
+    Table table;
 
-    Student* group[7];
-    group[0] = new GoodStudent("Романов   ");
-    group[1] = new GoodStudent("Егоров    ");
-    group[2] = new AverageStudent("Николаев  ");
-    group[3] = new AverageStudent("Андреев   ");
-    group[4] = new BadStudent("Макаров   ");
-    group[5] = new BadStudent("Степанов  ");
-    group[6] = new BadStudent("Фёдоров   ");
+    std::vector<Student*> group;
+    std::vector<std::string> names = { "Романов", "Егоров", "Николаев",
+        "Андреев", "Макаров", "Степанов", "Фёдоров" };
+    
+    group.push_back(new GoodStudent(names[0]));
+    group.push_back(new GoodStudent(names[1]));
+    group.push_back(new AverageStudent(names[2]));
+    group.push_back(new AverageStudent(names[3]));
+    group.push_back(new BadStudent(names[4]));
+    group.push_back(new BadStudent(names[5]));
+    group.push_back(new BadStudent(names[6]));
 
-    teacher.registerStudents(group, 7);
+    for (const auto& name : names) {
+        table.registerStudent(name);
+    }
 
-    Equation tasks[5] = {
-        {1, -5, 6},
-        {1, 2, 1},
-        {1, -3, 2},
-        {1, 0, -4},
-        {2, -4, 2}
-    };
+    std::vector<Equation> tasks = Reader::readEquations("input.txt");
 
-    for (int i = 0; i < 7; ++i) {
-        for (int j = 0; j < 5; ++j) {
-            teacher.receiveLetter(tasks[j], group[i]->solve(tasks[j]), group[i]->getName());
+    if (tasks.empty()) {
+        std::cout << "Нет уравнений для решения" << std::endl;
+        return 1;
+    }
+
+    for (Student* student : group) {
+        for (const Equation& eq : tasks) {
+            teacher.receiveLetter(eq, student->solve(eq), student->getName());
         }
     }
 
-    teacher.checkLetters();
-    teacher.publishTable();
+    teacher.checkAndGrade(table);
+    table.print();
 
-    for (int i = 0; i < 7; ++i) delete group[i];
+    for (Student* student : group) {
+        delete student;
+    }
 
     return 0;
 }

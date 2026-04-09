@@ -3,6 +3,6 @@
 
 class AverageStudent : public Student {
 public:
-    AverageStudent(std::string n);
+    AverageStudent(const std::string& n);
     Answer solve(Equation eq) override;
 };

@@ -1,81 +1,73 @@
 #include "Teacher.h"
-#include "Student.h"
+#include "Table.h"
 #include <cmath>
-#include <iostream>
+#define EPS 1e-9
 
-Teacher::Teacher() : head(nullptr), table(nullptr), tableSize(0) {}
-
-Teacher::~Teacher() {
-    while (head) {
-        Letter* temp = head;
-        head = head->next;
-        delete temp;
-    }
-    delete[] table;
+void Teacher::receiveLetter(Equation eq, Answer ans, const std::string& name) {
+    lettersMap[name].push_back(Letter(eq, ans));
 }
 
-void Teacher::registerStudents(Student** list, int count) {
-    tableSize = count;
-    table = new Record[tableSize];
-    for (int i = 0; i < count; ++i) {
-        table[i] = { list[i]->getName(), 0 };
-    }
-}
-
-void Teacher::receiveLetter(Equation eq, Answer ans, std::string name) {
-    Letter* newLetter = new Letter{ eq, ans, name, nullptr };
-    if (!head) head = newLetter;
-    else {
-        Letter* temp = head;
-        while (temp->next) temp = temp->next;
-        temp->next = newLetter;
-    }
-}
-
-void Teacher::checkLetters() {
-    Letter* current = head;
-    while (current) {
-        double d = current->eq.b * current->eq.b - 4 * current->eq.a * current->eq.c;
-
-        bool isCorrect = false;
-
-        if (d < 0) {
-            isCorrect = (current->studentAnswer.rootsCount == 0);
-        }
-        else {
-            double sqrt_d = sqrt(d);
-            double x1 = (-current->eq.b - sqrt_d) / (2 * current->eq.a);
-            double x2 = (-current->eq.b + sqrt_d) / (2 * current->eq.a);
-
-            if (d == 0) {
-                isCorrect = (current->studentAnswer.rootsCount == 1 &&
-                    std::abs(current->studentAnswer.root1 - x1) < 0.001);
+Answer Teacher::correctAnswer(const Equation& eq) const {
+    if (std::abs(eq.a) < EPS) {
+        if (std::abs(eq.b) < EPS) {
+            if (std::abs(eq.c) < EPS) {
+                return { 0, 0, -1 };
             }
             else {
-                isCorrect = (current->studentAnswer.rootsCount == 2 &&
-                    ((std::abs(current->studentAnswer.root1 - x1) < 0.001 &&
-                        std::abs(current->studentAnswer.root2 - x2) < 0.001) ||
-                        (std::abs(current->studentAnswer.root1 - x2) < 0.001 &&
-                            std::abs(current->studentAnswer.root2 - x1) < 0.001)));
+                return { 0, 0, 0 };
             }
         }
-
-        if (isCorrect) {
-            for (int i = 0; i < tableSize; ++i) {
-                if (table[i].name == current->studentName) {
-                    table[i].score++;
-                    break;
-                }
-            }
+        else {
+            double x = -eq.c / eq.b;
+            return { x, x, 1 };
         }
-        current = current->next;
     }
+
+    double d = eq.b * eq.b - 4 * eq.a * eq.c;
+
+    if (d < -EPS) return { 0, 0, 0 };
+
+    double sqrt_d = sqrt(d);
+    double x1 = (-eq.b - sqrt_d) / (2 * eq.a);
+    double x2 = (-eq.b + sqrt_d) / (2 * eq.a);
+
+    if (std::abs(d) < EPS) return { x1, x1, 1 };
+    return { x1, x2, 2 };
 }
 
-void Teacher::publishTable() {
-    std::cout << "            \t|                       \n";
-    std::cout << "----------------------------------------\n";
-    for (int i = 0; i < tableSize; ++i) {
-        std::cout << table[i].name << "\t| " << table[i].score << "\n";
+bool Teacher::isAnswerCorrect(const Answer& studentAns, const Equation& eq) const {
+    Answer correct = correctAnswer(eq);
+
+    if (correct.rootsCount == -1) {
+        return studentAns.rootsCount == -1;
     }
+
+    if (correct.rootsCount == 0) {
+        return studentAns.rootsCount == 0;
+    }
+
+    if (correct.rootsCount == 1) {
+        return studentAns.rootsCount == 1 &&
+            std::abs(studentAns.root1 - correct.root1) < EPS;
+    }
+
+    return studentAns.rootsCount == 2 &&
+        ((std::abs(studentAns.root1 - correct.root1) < EPS &&
+            std::abs(studentAns.root2 - correct.root2) < EPS) ||
+            (std::abs(studentAns.root1 - correct.root2) < EPS &&
+                std::abs(studentAns.root2 - correct.root1) < EPS));
+}
+
+void Teacher::checkAndGrade(Table& table) {
+    for (auto& pair : lettersMap) {
+        const std::string& studentName = pair.first;
+        const std::vector<Letter>& letters = pair.second;
+
+        for (const Letter& letter : letters) {
+            if (isAnswerCorrect(letter.studentAnswer, letter.eq)) {
+                table.addScore(studentName, 1);
+            }
+        }
+    }
+    lettersMap.clear();
 }
